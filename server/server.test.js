@@ -10,7 +10,8 @@ const todos = [{
     text : "salam"
 },{
     _id : new ObjectID(),
-    text : "khoobe"
+    text : "khoobe",
+    completed : true
 }]
 
 beforeEach((done)=>{
@@ -108,3 +109,44 @@ describe("DELETE /todos:id",()=>{
             })
     })
 })
+
+describe("UPDATE /todos:id",()=>{
+    it("should update data",(done)=>{
+        var Hexid = todos[0]._id.toHexString()
+        var text = "salam azizam"
+
+        request(app)
+            .patch(`/todos/${Hexid}`)
+            .send({
+                completed : true,
+                text
+            })
+            .expect(200)
+            .expect((res)=>{
+                expect(res.body.text).toBe(text)
+                expect(res.body.completed).toBe(true)
+                expect(typeof res.body.completeAt).toBe('number')
+            })
+            .end(done)
+    })
+
+    it("should update completeAt",(done)=>{
+        var Hexid = todos[1]._id.toHexString()
+        var text = "salam azizam"
+
+        request(app)
+            .patch(`/todos/${Hexid}`)
+            .send({
+                completed : false,
+                text
+            })
+            .expect(200)
+            .expect((res)=>{
+                expect(res.body.text).toBe(text)
+                expect(res.body.completed).toBe(false)
+                expect(res.body.completeAt).toBeNull()
+            })
+            .end(done)
+    })
+})
+

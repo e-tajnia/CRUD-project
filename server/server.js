@@ -1,11 +1,13 @@
 var {mongoose} = require('./db/mongoose')
 var {Todo} = require('./models/todo')
-var {ObjectID} = require('mongodb')
+var {User} = require('./models/user')
+var {ObjectID, ObjectId} = require('mongodb')
 const express = require('express')
 const bodyParser = require('body-parser')
+const _ = require('lodash')
+const todo = require('./models/todo')
 
 var app = express()
- 
 app.use(bodyParser.json())
 
 app.post('/todos',(req,res)=>{
@@ -18,7 +20,6 @@ app.post('/todos',(req,res)=>{
        res.status(400).send(e)
    })
 })
-
 
 app.get('/todos',(req,res)=>{
     Todo.find().then((todos)=>{
@@ -56,6 +57,44 @@ app.delete('/todos/:id' , (req,res)=>{
         res.send({todo})
     }).catch((e)=>{
         return res.status(404).send()
+    })
+})
+
+app.patch('/todos/:id',(req,res)=>{
+    var id = req.params.id
+    var body = _.pick(req.body,['text','completed'])
+
+    if(!ObjectId.isValid(id)){
+        return res.status(404).send()
+    }
+    if (_.isBoolean(body.completed) && body.completed) {
+        body.completeAt = new Date().getTime()
+    }
+    else{
+        body.completed = false
+        body.completeAt = null
+    }
+
+    Todo.findByIdAndUpdate(id,{$set : body},{new : true}).then((todo)=>{
+        if (!todo) {
+            return res.status(404).send()
+        }
+        res.send(todo)
+    }).catch((e)=>{
+        return res.status(404).send()
+    })
+})
+
+app.post('/users',(req,res)=>{
+    var body = _.pick(req.body,['email','password'])
+    var user = new User(body)
+
+    user.save().then(()=>{
+        user.generateToken();
+       }).then((token)=>{
+            res.header('x-auth',token).send(user)
+       }).catch((e)=>{
+            res.status(400).send(e)
     })
 })
 
